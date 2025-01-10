@@ -86,7 +86,7 @@ def write_cashew_csv(cashew_file, transactions: list[Transaction]) -> None:
         }
 
         if transaction.direction == 'transfer':
-            out["category name"] = "Transfer"
+            out["category name"] = "Balance Correction"
             out["note"] = f"Balance transfer\n{transaction.src} -> {transaction.dest}"
             # from
             writer.writerow({**out, "amount": -transaction.amount})
