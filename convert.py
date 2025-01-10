@@ -10,13 +10,14 @@ from typing import Literal
 Direction = Literal["income", "expense", "transfer"]
 
 
-@dataclass
+@dataclass(frozen=True, kw_only=True, slots=True)
 class Transaction:
     date: str
     direction: Direction
     src: str
     dest: str
     amount: float
+    note: str
 
 
 ONEMONEY_DATE_HEADERS = ["ДАТА"]
@@ -29,6 +30,7 @@ ONEMONEY_DIRECTION_MAP: dict[str, Direction] = {
 ONEMONEY_SRC_HEADERS = ["СО СЧЁТА"]
 ONEMONEY_DEST_HEADERS = ["НА СЧЁТ/НА КАТЕГОРИЮ"]
 ONEMONEY_AMOUNT_HEADERS = ["СУММА"]
+ONEMONEY_NOTE_HEADERS = ["ЗАМЕТКИ"]
 
 
 def get_onemoney_header(candidates: list[str], row: dict[str, str]) -> str:
@@ -54,19 +56,56 @@ def read_1money_csv(onemoney_file) -> list[Transaction]:
     for row in reader:
         if all(value == "" or value == None for value in row.values()):
             break
-        date = get_onemoney_header(ONEMONEY_DATE_HEADERS, row)
-        direction = get_onemoney_direction(row)
-        src = get_onemoney_header(ONEMONEY_SRC_HEADERS, row)
-        dest = get_onemoney_header(ONEMONEY_DEST_HEADERS, row)
-        amount = float(get_onemoney_header(ONEMONEY_AMOUNT_HEADERS, row))
-        transactions.append(Transaction(date, direction, src, dest, amount))
+        transactions.append(
+            Transaction(
+                date=get_onemoney_header(ONEMONEY_DATE_HEADERS, row),
+                direction=get_onemoney_direction(row),
+                src=get_onemoney_header(ONEMONEY_SRC_HEADERS, row),
+                dest=get_onemoney_header(ONEMONEY_DEST_HEADERS, row),
+                amount=float(get_onemoney_header(ONEMONEY_AMOUNT_HEADERS, row)),
+                note=get_onemoney_header(ONEMONEY_NOTE_HEADERS, row),
+            )
+        )
     return transactions
+
+
+def write_cashew_csv(cashew_file, transactions: list[Transaction]) -> None:
+    writer = csv.DictWriter(
+        cashew_file,
+        fieldnames=["date", "amount", "category name", "title", "note", "account"],
+    )
+    writer.writeheader()
+
+    for transaction in transactions:
+        out = {
+            "date": transaction.date,
+            "category name": transaction.dest,
+            "title": "",
+            "note": transaction.note,
+            "account": transaction.src,
+        }
+
+        if transaction.direction == 'transfer':
+            out["category name"] = "Transfer"
+            out["note"] = f"Balance transfer\n{transaction.src} -> {transaction.dest}"
+            # from
+            writer.writerow({**out, "amount": -transaction.amount})
+            # to
+            writer.writerow({**out, "account": transaction.dest, "amount": transaction.amount})
+        elif transaction.direction == 'income':
+            writer.writerow({**out, "amount": transaction.amount})
+        elif transaction.direction == 'expense':
+            writer.writerow({**out, "amount": -transaction.amount})
+        else:
+            raise ValueError(f"Unknown direction: {transaction.direction}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert 1Money CSV to Cashew")
     parser.add_argument(
-        "input_file", type=argparse.FileType("r", encoding="utf-8-sig"), help="1Money CSV file"
+        "input_file",
+        type=argparse.FileType("r", encoding="utf-8-sig"),
+        help="1Money CSV file",
     )
     parser.add_argument(
         "output_file", type=argparse.FileType("w"), help="Cashew import file"
@@ -78,6 +117,8 @@ def main() -> None:
 
     transactions = read_1money_csv(input_file)
     print(f"Imported {len(transactions)} transactions.")
+
+    write_cashew_csv(output_file, transactions)
 
 
 if __name__ == "__main__":
