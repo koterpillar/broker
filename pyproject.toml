@@ -1,0 +1,60 @@
+[tool.poetry]
+name = "broker"
+version = "0.0.0"
+description = "Convert and operate on financial data from 1Money, Cashew and similar apps"
+readme = "README.md"
+repository = "https://github.com/koterpillar/broker"
+authors = ["Alexey Kotlyarov <a@koterpillar.com>"]
+license = "GPL-3.0-or-later"
+package-mode = false
+# pylint:disable=missing-class-docstring,missing-function-docstring,missing-module-docstring
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+fawltydeps = "^0.18.0"
+isort = "^5.13.2"
+mypy = "^1.15.0"
+pylint = "^3.3.4"
+
+[build-system]
+requires = ["poetry-core>=2.0.1"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.main]
+jobs = 0
+
+[tool.pylint.messages_control]
+disable = [
+    "C",
+    "R",
+    "broad-exception-raised",
+    "fixme",
+    "invalid-name",
+    "method-cache-max-size-none",
+    "missing-timeout",
+    "no-else-raise",
+    "no-else-return",
+    "unspecified-encoding",
+]
+
+[tool.pylint.reports]
+output-format = "colorized"
+
+[tool.fawltydeps]
+# ignore_undeclared = ["_typeshed"]
+ignore_unused = [
+    "black",
+    "coverage",
+    "fawltydeps",
+    "isort",
+    "mypy",
+    "pylint",
+    "pylint-pydantic",
+    "pytest-trio",
+]

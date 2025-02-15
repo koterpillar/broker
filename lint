@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# macOS's bash (3.x) can't interpolate empty arrays into parameters under
+# nounset; keep command and args together as a workaround.
+ISORT=(isort)
+BLACK=(black)
+if [ "${1-}" != "--format" ]
+then
+    ISORT+=(--check)
+    BLACK+=(--check)
+fi
+
+DIR=$(cd "$(dirname "$0")" && pwd)
+
+PYTHON=("${DIR}/broker")
+
+poetry run "${ISORT[@]}" "${PYTHON[@]}"
+poetry run "${BLACK[@]}" "${PYTHON[@]}"
+poetry run mypy "${PYTHON[@]}"
+poetry run pylint "${PYTHON[@]}"
+poetry run fawltydeps
