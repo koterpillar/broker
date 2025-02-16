@@ -2,6 +2,10 @@ import csv
 from collections.abc import Iterable
 
 from .data import Transaction
+from .utils import words
+
+
+BALANCE_CORRECTION = ["Balance Correction", "Коррекция баланса"]
 
 
 def cashew_rows(transaction: Transaction) -> Iterable[dict[str, str | float]]:
@@ -14,7 +18,7 @@ def cashew_rows(transaction: Transaction) -> Iterable[dict[str, str | float]]:
     }
 
     if transaction.direction == "transfer":
-        out["category name"] = "Balance Correction"
+        out["category name"] = BALANCE_CORRECTION[0]
         out["note"] = f"Balance transfer: {transaction.src} -> {transaction.dest}"
         # from
         yield {**out, "amount": -transaction.amount}
@@ -38,3 +42,30 @@ def write_cashew_csv(cashew_file, transactions: Iterable[Transaction]) -> None:
     for transaction in transactions:
         for row in cashew_rows(transaction):
             writer.writerow(row)
+
+
+def cashew_direction(row: dict[str, str]) -> str:
+    if row["category name"] in BALANCE_CORRECTION:
+        return "transfer"
+    if row["income"] == "true":
+        return "income"
+    return "expense"
+
+
+def read_cashew_csv(cashew_file) -> list[Transaction]:
+    reader = csv.DictReader(cashew_file)
+    transactions = []
+    for row in reader:
+        if row["category name"] in BALANCE_CORRECTION:
+            # FIXME process transfers
+            continue
+
+        transactions.append(Transaction(
+            date=row["date"],
+            direction=cashew_direction(row),
+            src=row["account"],
+            dest=words(row["category name"], row["subcategory name"]),
+            amount=abs(float(row["amount"])),
+            note=words(row["title"], row["note"]),
+        ))
+    return transactions

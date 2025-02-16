@@ -9,6 +9,7 @@ license = "GPL-3.0-or-later"
 
 [tool.poetry.scripts]
 convert = "broker.convert:main"
+match = "broker.match:main"
 
 [tool.poetry.dependencies]
 python = "^3.13"
