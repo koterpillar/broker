@@ -17,6 +17,8 @@ jobs:
         with:
           python-version-file: 'pyproject.toml'
       - name: Install dependencies
-        run: pipx install poetry
+        run: |
+          pipx install poetry
+          poetry install
       - name: Lint
         run: ./lint
