@@ -1,6 +1,6 @@
 import csv
 
-from .data import Direction, Row, Transaction, row_value
+from .data import Direction, Row, Transaction, row_date, row_value
 
 ONEMONEY_DATE_HEADERS = ["ДАТА"]
 ONEMONEY_DIRECTION_HEADERS = ["ТИП"]
@@ -31,7 +31,7 @@ def read_onemoney_csv(onemoney_file) -> list[Transaction]:
             break
         transactions.append(
             Transaction(
-                date=row_value(ONEMONEY_DATE_HEADERS, row),
+                date=row_date(row),
                 direction=onemoney_direction(row),
                 src=row_value(ONEMONEY_SRC_HEADERS, row),
                 dest=row_value(ONEMONEY_DEST_HEADERS, row),

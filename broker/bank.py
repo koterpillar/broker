@@ -1,18 +1,6 @@
 import csv
-import re
 
-from .data import Row, Transaction, row_value
-
-DATE_COLUMNS = ["Transaction Date"]
-
-
-def bank_date(row: Row) -> str:
-    # FIXME: dates are strings
-    result = row_value(DATE_COLUMNS, row)
-    if match := re.match(r"^(\d{2})/(\d{2})/(\d{4})$", result):
-        # Convert DD/MM/YYYY to YYYY-MM-DD
-        return f"{match.group(3)}-{match.group(2)}-{match.group(1)}"
-    return result
+from .data import Transaction, row_date
 
 
 def read_bank_csv(bank_file) -> list[Transaction]:
@@ -20,7 +8,7 @@ def read_bank_csv(bank_file) -> list[Transaction]:
     transactions = []
     account = "Bank"
     for row in reader:
-        dt = bank_date(row)
+        dt = row_date(row)
 
         if row["Debit"]:
             amount = -float(row["Debit"])

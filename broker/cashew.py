@@ -1,7 +1,7 @@
 import csv
 from collections.abc import Iterable
 
-from .data import Direction, Row, Transaction
+from .data import Direction, Row, Transaction, row_date
 from .utils import words
 
 BALANCE_CORRECTION = ["Balance Correction", "Коррекция баланса"]
@@ -9,7 +9,7 @@ BALANCE_CORRECTION = ["Balance Correction", "Коррекция баланса"]
 
 def cashew_rows(transaction: Transaction) -> Iterable[dict[str, str | float]]:
     out = {
-        "date": transaction.date,
+        "date": transaction.date.strftime("%Y-%m-%d"),
         "category name": transaction.dest,
         "title": "",
         "note": transaction.note,
@@ -61,7 +61,7 @@ def read_cashew_csv(cashew_file) -> list[Transaction]:
 
         transactions.append(
             Transaction(
-                date=row["date"],
+                date=row_date(row),
                 direction=cashew_direction(row),
                 src=row["account"],
                 dest=words(row["category name"], row["subcategory name"]),
