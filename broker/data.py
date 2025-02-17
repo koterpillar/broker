@@ -43,3 +43,15 @@ class Transaction:
             balance[account] = round(balance[account], 4)
 
         return balance
+
+
+Row = dict[str, str]
+
+
+def row_value(candidates: list[str], row: Row) -> str:
+    for candidate in candidates:
+        if candidate in row:
+            return row[candidate]
+    raise ValueError(
+        f"No header matching {', '.join(candidates)} found. Headers: {', '.join(row.keys())}"
+    )

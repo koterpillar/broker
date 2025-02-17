@@ -1,6 +1,6 @@
 import csv
 
-from .data import Direction, Transaction
+from .data import Direction, Row, Transaction, row_value
 
 ONEMONEY_DATE_HEADERS = ["ДАТА"]
 ONEMONEY_DIRECTION_HEADERS = ["ТИП"]
@@ -15,17 +15,8 @@ ONEMONEY_AMOUNT_HEADERS = ["СУММА"]
 ONEMONEY_NOTE_HEADERS = ["ЗАМЕТКИ"]
 
 
-def get_onemoney_header(candidates: list[str], row: dict[str, str]) -> str:
-    for candidate in candidates:
-        if candidate in row:
-            return row[candidate]
-    raise ValueError(
-        f"No header matching {', '.join(candidates)} found. Headers: {', '.join(row.keys())}"
-    )
-
-
-def get_onemoney_direction(row: dict[str, str]) -> Direction:
-    direction_str = get_onemoney_header(ONEMONEY_DIRECTION_HEADERS, row)
+def onemoney_direction(row: Row) -> Direction:
+    direction_str = row_value(ONEMONEY_DIRECTION_HEADERS, row)
     try:
         return ONEMONEY_DIRECTION_MAP[direction_str]
     except KeyError as e:
@@ -40,12 +31,12 @@ def read_onemoney_csv(onemoney_file) -> list[Transaction]:
             break
         transactions.append(
             Transaction(
-                date=get_onemoney_header(ONEMONEY_DATE_HEADERS, row),
-                direction=get_onemoney_direction(row),
-                src=get_onemoney_header(ONEMONEY_SRC_HEADERS, row),
-                dest=get_onemoney_header(ONEMONEY_DEST_HEADERS, row),
-                amount=float(get_onemoney_header(ONEMONEY_AMOUNT_HEADERS, row)),
-                note=get_onemoney_header(ONEMONEY_NOTE_HEADERS, row),
+                date=row_value(ONEMONEY_DATE_HEADERS, row),
+                direction=onemoney_direction(row),
+                src=row_value(ONEMONEY_SRC_HEADERS, row),
+                dest=row_value(ONEMONEY_DEST_HEADERS, row),
+                amount=float(row_value(ONEMONEY_AMOUNT_HEADERS, row)),
+                note=row_value(ONEMONEY_NOTE_HEADERS, row),
             )
         )
     return transactions
