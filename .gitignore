@@ -1,3 +1,4 @@
 *.csv
+*.yaml
 *.sqlite
 __pycache__/

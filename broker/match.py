@@ -1,22 +1,41 @@
 import argparse
-from datetime import timedelta
+from dataclasses import dataclass
+from typing import Optional
+
+import yaml
 
 from .bank import read_bank_csv
 from .cashew import read_cashew_csv
 from .data import Transaction
 
 
-def matches(txn: Transaction, bank_txn: Transaction) -> bool:
+@dataclass(frozen=True, kw_only=True, slots=True)
+class Hint:
+    bank: str
+    cashew: str
+
+
+def read_hints(hints_file) -> list[Hint]:
+    contents = yaml.safe_load(hints_file)
+    return [Hint(**row) for row in contents]
+
+
+UNMATCHED_TXN_SCORE = 1000
+
+
+def matches(txn: Transaction, bank_txn: Transaction, hints: list[Hint]) -> Optional[int]:
     if txn.amount != bank_txn.amount:
         return False
     if txn.direction != bank_txn.direction:
         return False
-    date_delta = abs(txn.date - bank_txn.date)
-    if date_delta < timedelta(days=-2):
+    score = 0
+    days_diff = abs(txn.date - bank_txn.date).days
+    if days_diff > 5:
         return False
-    if date_delta > timedelta(days=2):
-        return False
-    return True
+    score += days_diff * 10
+    if not any(hint.bank == bank_txn.note and hint.cashew == txn.dest for hint in hints):
+        score += 500
+    return score
 
 
 def main() -> None:
@@ -26,6 +45,7 @@ def main() -> None:
     )
     parser.add_argument("bank_file", type=argparse.FileType("r"), help="Bank CSV file")
     parser.add_argument("-a", "--account", help="Account name")
+    parser.add_argument("--hints", type=argparse.FileType("r"), help="Match hints")
     args = parser.parse_args()
 
     cashew_file = args.cashew_file
@@ -35,15 +55,12 @@ def main() -> None:
     transactions = [t for t in all_transactions if args.account in t.accounts]
     min_date = min(t.date for t in transactions)
     max_date = max(t.date for t in transactions)
+    for txn in transactions:
+        if txn.amount < 0:
+            raise ValueError(f"Negative amount {txn.amount} in {txn}.")
     print(
         f"Imported {len(transactions)} Cashew transactions from {min_date} to {max_date}."
     )
-
-    for txn in transactions:
-        if txn.amount < 0:
-            print(txn.amount)
-            print(txn)
-            raise ValueError("Negative amount")
 
     all_bank_transactions = read_bank_csv(bank_file)
     bank_transactions = [
@@ -51,15 +68,27 @@ def main() -> None:
     ]
     print(f"Imported {len(bank_transactions)} bank transactions.")
 
+    hints = read_hints(args.hints) if args.hints else []
+
+    matched = set()
+
     for bank_txn in bank_transactions:
-        candidates = [t for t in transactions if matches(t, bank_txn)]
-        if len(candidates) == 1:
-            # FIXME: remove matched transaction
-            # FIXME: backtracking
+        candidates = []
+        for txn in transactions:
+            if txn in matched:
+                continue
+            if score := matches(txn, bank_txn, hints):
+                candidates.append((score, txn))
+
+        if not candidates:
+            print(f"Could not match {bank_txn}")
             continue
+
         if len(candidates) > 1:
             print(f"Multiple candidates for {bank_txn}:")
-            for candidate in candidates:
-                print(candidate)
-            raise ValueError("Multiple candidates")
-        print(f"Could not match {bank_txn}")
+            for score, candidate in candidates:
+                print(score, candidate)
+
+        _, txn = candidates[0]
+        matched.add(txn)
+        # FIXME: backtracking
