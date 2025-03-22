@@ -1,4 +1,5 @@
 import unittest
+from collections.abc import Iterator
 
 from broker.astar import AStar, NoPathError
 
@@ -8,16 +9,16 @@ class NumbersAStar(AStar[int]):
         self.goal = goal
         self.steps = steps
 
+    def is_goal(self, node: int) -> bool:
+        return node == self.goal
+
     def heuristic(self, node: int) -> float:
         return abs(node - self.goal)
 
-    def get_neighbors(self, node: int) -> list[tuple[int, float]]:
-        return [
-            (node + step, abs(step)) for step in self.steps if abs(node + step) <= 100
-        ]
-
-    def is_goal(self, node: int) -> bool:
-        return node == self.goal
+    def get_neighbors(self, node: int) -> Iterator[tuple[int, float]]:
+        for step in self.steps:
+            if abs(node + step) <= 100:
+                yield node + step, abs(step)
 
 
 class TestAStar(unittest.TestCase):

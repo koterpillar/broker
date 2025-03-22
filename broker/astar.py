@@ -1,5 +1,6 @@
 import heapq
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import Generic, Optional, TypeVar, cast
 
 T = TypeVar("T")
@@ -16,15 +17,15 @@ class NoPathError(Exception, Generic[T]):
 
 class AStar(ABC, Generic[T]):
     @abstractmethod
+    def is_goal(self, node: T) -> bool:
+        pass
+
+    @abstractmethod
     def heuristic(self, node: T) -> float:
         pass
 
     @abstractmethod
-    def get_neighbors(self, node: T) -> list[tuple[T, float]]:
-        pass
-
-    @abstractmethod
-    def is_goal(self, node: T) -> bool:
+    def get_neighbors(self, node: T) -> Iterable[tuple[T, float]]:
         pass
 
     def search(self, start: T) -> Optional[list[T]]:
