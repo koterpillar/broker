@@ -22,3 +22,5 @@ jobs:
           poetry install
       - name: Lint
         run: ./lint
+      - name: Test
+        run: poetry run python -m unittest

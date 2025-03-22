@@ -14,7 +14,7 @@ fi
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 
-PYTHON=("${DIR}/broker")
+PYTHON=("${DIR}/broker" "${DIR}/tests")
 
 poetry run "${ISORT[@]}" "${PYTHON[@]}"
 poetry run "${BLACK[@]}" "${PYTHON[@]}"
