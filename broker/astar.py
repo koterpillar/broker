@@ -5,6 +5,15 @@ from typing import Generic, Optional, TypeVar, cast
 T = TypeVar("T")
 
 
+class NoPathError(Exception, Generic[T]):
+    def __init__(self, *, best_node: T, path: list[T]):
+        self.best_node = best_node
+        self.path = path
+        super().__init__(
+            f"No path to goal. Best node: {best_node}, Partial path: {path}"
+        )
+
+
 class AStar(ABC, Generic[T]):
     @abstractmethod
     def heuristic(self, node: T) -> float:
@@ -23,7 +32,9 @@ class AStar(ABC, Generic[T]):
         heapq.heappush(open_set, (0, start))
         came_from: dict[T, Optional[T]] = {start: None}
         g_score: dict[T, float] = {start: 0}
-        f_score: dict[T, float] = {start: self.heuristic(start)}
+
+        best_node = start
+        best_score = self.heuristic(start)
 
         while open_set:
             current = heapq.heappop(open_set)[1]
@@ -37,10 +48,17 @@ class AStar(ABC, Generic[T]):
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor)
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    neighbor_score = self.heuristic(neighbor)
+                    heapq.heappush(
+                        open_set, (tentative_g_score + neighbor_score, neighbor)
+                    )
+                    if neighbor_score < best_score:
+                        best_node = neighbor
+                        best_score = neighbor_score
 
-        return None
+        raise NoPathError(
+            best_node=best_node, path=self.reconstruct_path(came_from, best_node)
+        )
 
     def reconstruct_path(self, came_from: dict[T, Optional[T]], current: T) -> list[T]:
         total_path = [current]

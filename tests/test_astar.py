@@ -1,6 +1,6 @@
 import unittest
 
-from broker.astar import AStar
+from broker.astar import AStar, NoPathError
 
 
 class NumbersAStar(AStar[int]):
@@ -23,10 +23,17 @@ class NumbersAStar(AStar[int]):
 class TestAStar(unittest.TestCase):
     def test_simple_path(self):
         astar = NumbersAStar(goal=5, steps=[1, -1])
+
         path = astar.search(start=0)
+
         self.assertEqual(path, [0, 1, 2, 3, 4, 5])
 
     def test_no_path(self):
         astar = NumbersAStar(goal=5, steps=[2])
-        path = astar.search(start=0)
-        self.assertIsNone(path)
+
+        with self.assertRaises(NoPathError) as context:
+            astar.search(start=0)
+
+        exception = context.exception
+        self.assertEqual(exception.best_node, 4)
+        self.assertEqual(exception.path, [0, 2, 4])
