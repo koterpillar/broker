@@ -23,7 +23,9 @@ def read_hints(hints_file) -> list[Hint]:
 UNMATCHED_TXN_SCORE = 1000
 
 
-def matches(txn: Transaction, bank_txn: Transaction, hints: list[Hint]) -> Optional[int]:
+def matches(
+    txn: Transaction, bank_txn: Transaction, hints: list[Hint]
+) -> Optional[int]:
     if txn.amount != bank_txn.amount:
         return False
     if txn.direction != bank_txn.direction:
@@ -33,7 +35,10 @@ def matches(txn: Transaction, bank_txn: Transaction, hints: list[Hint]) -> Optio
     if days_diff > 5:
         return False
     score += days_diff * 10
-    if not any(hint.bank == bank_txn.note and hint.cashew == txn.dest for hint in hints):
+    if not any(
+        bank_txn.note.startswith(hint.bank) and hint.cashew == txn.dest
+        for hint in hints
+    ):
         score += 500
     return score
 
