@@ -1,9 +1,11 @@
 import argparse
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Optional
 
 import yaml
 
+from .astar import AStar
 from .bank import read_bank_csv
 from .cashew import read_cashew_csv
 from .data import Transaction
@@ -20,27 +22,66 @@ def read_hints(hints_file) -> list[Hint]:
     return [Hint(**row) for row in contents]
 
 
-UNMATCHED_TXN_SCORE = 1000
+Matching = tuple[frozenset[Transaction], frozenset[Transaction]]
 
 
-def matches(
-    txn: Transaction, bank_txn: Transaction, hints: list[Hint]
-) -> Optional[int]:
-    if txn.amount != bank_txn.amount:
-        return False
-    if txn.direction != bank_txn.direction:
-        return False
-    score = 0
-    days_diff = abs(txn.date - bank_txn.date).days
-    if days_diff > 5:
-        return False
-    score += days_diff * 10
-    if not any(
-        bank_txn.note.startswith(hint.bank) and hint.cashew == txn.dest
-        for hint in hints
+class MatchAStar(AStar[Matching]):
+    def __init__(self, hints: list[Hint]):
+        self.hints = hints
+        self.give_up = False
+
+    def is_goal(self, node: Matching) -> bool:
+        txns, bank_txns = node
+        return not txns and not bank_txns
+
+    def heuristic(self, node: Matching) -> float:
+        txns, bank_txns = node
+        return (len(txns) + len(bank_txns)) * 1000
+
+    def matches(self, txn: Transaction, bank_txn: Transaction) -> Optional[int]:
+        if txn.amount != bank_txn.amount:
+            return False
+        if txn.direction != bank_txn.direction:
+            return False
+        score = 0
+        days_diff = abs(txn.date - bank_txn.date).days
+        if days_diff > 5:
+            return False
+        score += days_diff * 10
+        if not any(
+            bank_txn.note.startswith(hint.bank) and hint.cashew == txn.dest
+            for hint in self.hints
+        ):
+            score += 500
+        return score
+
+    give_up: bool
+
+    def get_neighbors(self, node: Matching) -> Iterator[tuple[Matching, float]]:
+        if self.give_up:
+            return
+
+        txns, bank_txns = node
+        print(
+            f"Matching between {len(txns)} Cashew and {len(bank_txns)} bank transactions."
+        )
+        if len(txns) + len(bank_txns) <= 105:
+            # give up
+            print("Giving up.")
+            self.give_up = True
+            return
+
+        for txn in txns:
+            for bank_txn in bank_txns:
+                if score := self.matches(txn, bank_txn):
+                    new_node = (txns - {txn}, bank_txns - {bank_txn})
+                    yield (new_node, score)
+
+    def run(
+        self, transactions: list[Transaction], bank_transactions: list[Transaction]
     ):
-        score += 500
-    return score
+        start = (frozenset(transactions), frozenset(bank_transactions))
+        return self.search(start)
 
 
 def main() -> None:
@@ -75,25 +116,7 @@ def main() -> None:
 
     hints = read_hints(args.hints) if args.hints else []
 
-    matched = set()
+    matcher = MatchAStar(hints)
 
-    for bank_txn in bank_transactions:
-        candidates = []
-        for txn in transactions:
-            if txn in matched:
-                continue
-            if score := matches(txn, bank_txn, hints):
-                candidates.append((score, txn))
-
-        if not candidates:
-            print(f"Could not match {bank_txn}")
-            continue
-
-        if len(candidates) > 1:
-            print(f"Multiple candidates for {bank_txn}:")
-            for score, candidate in candidates:
-                print(score, candidate)
-
-        _, txn = candidates[0]
-        matched.add(txn)
-        # FIXME: backtracking
+    matches = matcher.run(transactions, bank_transactions)
+    print(matches)
