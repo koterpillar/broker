@@ -12,7 +12,7 @@ convert = "broker.convert:main"
 match = "broker.match:main"
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.13.4"
 PyYAML = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
