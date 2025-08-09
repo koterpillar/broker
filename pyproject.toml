@@ -20,7 +20,7 @@ black = "^25.1.0"
 fawltydeps = "^0.20.0"
 isort = "^6.0.1"
 mypy = "^1.17.1"
-pylint = "^3.3.7"
+pylint = "^3.3.8"
 types-PyYAML = "^6.0.12"
 
 [build-system]
