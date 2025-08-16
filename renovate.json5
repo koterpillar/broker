@@ -5,7 +5,8 @@
   packageRules: [
     {
       matchPackageNames: ["python"],
-      allowedUpdateTypes: ["major"],
+      matchUpdateTypes: ["minor", "patch"],
+      enabled: false,
     },
   ],
 }
