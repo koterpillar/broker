@@ -4,8 +4,8 @@
   rangeStrategy: "bump",
   packageRules: [
     {
-      matchPackageNames: ["python"],
-      matchUpdateTypes: ["minor", "patch"],
+      matchDepNames: ["python"],
+      matchUpdateTypes: ["patch"],
       enabled: false,
     },
   ],
