@@ -16,7 +16,7 @@ python = "^3.13"
 PyYAML = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+black = "^25.9.0"
 fawltydeps = "^0.20.0"
 isort = "^6.0.1"
 mypy = "^1.18.2"
