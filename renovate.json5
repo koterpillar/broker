@@ -5,7 +5,7 @@
   packageRules: [
     {
       matchDepNames: ["python"],
-      extractVersion: "^(?<version>v\\d+\\.\\d+)",
+      extractVersion: "^(?<version>\\d+\\.\\d+)",
     },
   ],
 }
